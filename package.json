@@ -1,0 +1,57 @@
+{
+  "name": "commission-system",
+  "private": true,
+  "version": "1.0.0",
+  "description": "员工提成管理系统 - 支持提成计算、数据统计和排行榜功能",
+  "author": "MiniMax Agent",
+  "type": "module",
+  "homepage": "https://你的用户名.github.io/commission-system",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/你的用户名/commission-system.git"
+  },
+  "packageManager": "pnpm@10.10.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint ./src --quiet",
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/material": "^6.0.2",
+    "@supabase/supabase-js": "^2.47.12",
+    "@types/prop-types": "^15.7.14",
+    "canvas": "^3.1.2",
+    "file-saver": "^2.0.5",
+    "framer-motion": "^12.23.6",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.536.0",
+    "prop-types": "^15.8.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.1",
+    "sharp": "^0.34.3",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "gh-pages": "^6.1.1",
+    "globals": "^15.9.0",
+    "postcss": "^8.4.45",
+    "tailwindcss": "^3.4.10",
+    "terser": "^5.31.1",
+    "vite": "^5.4.1"
+  }
+}
