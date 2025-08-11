@@ -1,0 +1,444 @@
+import { supabase } from '../utils/supabase';
+
+// App-specific table names for account management
+const APP_ID = 'e87b41cfe355428b8146f8bae8184e10';
+export const ACCOUNT_MANAGEMENT_TABLES = {
+  PERSONNEL: `app_${APP_ID}_personnel`,
+  ACCOUNTS: `app_${APP_ID}_account_management_ads`,
+  RECHARGE_OPERATIONS: `app_${APP_ID}_recharge_operations`,
+  RESET_OPERATIONS: `app_${APP_ID}_reset_operations`,
+  DAILY_MENU: `app_${APP_ID}_daily_menu`
+};
+
+// Personnel service
+export const personnelService = {
+  // Get all personnel
+  async getAll() {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.PERSONNEL)
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Update personnel avatar
+  async updateAvatar(id, avatarUrl) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.PERSONNEL)
+      .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  }
+};
+
+// Account service
+export const accountService = {
+  // Get all accounts
+  async getAll() {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.ACCOUNTS)
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Get accounts by personnel
+  async getByPersonnel(personnelId) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.ACCOUNTS)
+      .select('*')
+      .eq('personnel_id', personnelId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Create new account
+  async create(accountData) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.ACCOUNTS)
+      .insert({
+        personnel_id: accountData.personnelId,
+        account_name: accountData.accountName,
+        ad_account_id: accountData.adAccountId,
+        status: accountData.status || 'Active'
+      })
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Update account
+  async update(id, accountData) {
+    const updateData = {
+      ...accountData,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.ACCOUNTS)
+      .update(updateData)
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Delete account
+  async delete(id) {
+    const { error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.ACCOUNTS)
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  // Update account status to "Reset" after zeroing
+  async updateStatusToReset(id) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.ACCOUNTS)
+      .update({ 
+        status: 'Reset',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  }
+};
+
+// Recharge operations service
+export const rechargeOperationsService = {
+  // Get all recharge operations
+  async getAll(limit = 50) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RECHARGE_OPERATIONS)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Create recharge operation
+  async create(operationData) {
+    // 验证必需的字段
+    if (!operationData.accountId || !operationData.amount || !operationData.operatorName) {
+      throw new Error('缺少必需的充值信息：账户ID、金额或操作员姓名');
+    }
+    
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RECHARGE_OPERATIONS)
+      .insert({
+        account_id: operationData.accountId,
+        personnel_id: operationData.personnelId || null,
+        account_name: operationData.accountName || 'Unknown Account',
+        ad_account_id: operationData.adAccountId || 'N/A',
+        amount: operationData.amount,
+        operator_name: operationData.operatorName,
+        description: operationData.description || `充值 $${operationData.amount} - ${operationData.accountName || 'Unknown Account'} (${operationData.operatorName})`
+      })
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Get today's recharge operations
+  async getTodayOperations() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RECHARGE_OPERATIONS)
+      .select('*')
+      .gte('created_at', today)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete recharge operation
+  async delete(operationId) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RECHARGE_OPERATIONS)
+      .delete()
+      .eq('id', operationId)
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  }
+};
+
+// Daily Menu Service
+export const dailyMenuService = {
+  // Get all menus
+  async getAll() {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.DAILY_MENU)
+      .select('*')
+      .eq('is_active', true)
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Get menu by date
+  async getByDate(date) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.DAILY_MENU)
+      .select('*')
+      .eq('date', date)
+      .eq('is_active', true)
+      .order('menu_type');
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Get today's menu
+  async getTodayMenu() {
+    const today = new Date().toISOString().split('T')[0];
+    return this.getByDate(today);
+  },
+
+  // Create new menu
+  async create(menuData) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.DAILY_MENU)
+      .insert({
+        date: menuData.date,
+        menu_type: menuData.menu_type,
+        dishes: menuData.dishes || [],
+        created_by: menuData.created_by || 'admin',
+        is_active: true
+      })
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Update menu
+  async update(id, menuData) {
+    const updateData = {
+      ...menuData,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.DAILY_MENU)
+      .update(updateData)
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Delete menu
+  async delete(id) {
+    const { error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.DAILY_MENU)
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  // Get week menu
+  async getWeekMenu(startDate = null) {
+    const start = startDate || new Date().toISOString().split('T')[0];
+    const endDate = new Date(start);
+    endDate.setDate(endDate.getDate() + 6);
+    const end = endDate.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.DAILY_MENU)
+      .select('*')
+      .gte('date', start)
+      .lte('date', end)
+      .eq('is_active', true)
+      .order('date');
+    
+    if (error) throw error;
+    return data;
+  }
+};
+
+  // Get recharge operations by account
+  async getByAccount(accountId) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RECHARGE_OPERATIONS)
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  }
+};
+
+// Reset operations service
+export const resetOperationsService = {
+  // Get all reset operations
+  async getAll(limit = 50) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RESET_OPERATIONS)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Create reset operation
+  async create(operationData) {
+    // 验证必需的字段
+    if (!operationData.accountId || operationData.balance === undefined || !operationData.operatorName) {
+      throw new Error('缺少必需的清零信息：账户ID、余额金额或操作员姓名');
+    }
+    
+    // 创建清零记录并同时更新账户状态
+    const { data, error } = await supabase.rpc('create_reset_operation_with_status_update', {
+      p_account_id: operationData.accountId,
+      p_personnel_id: operationData.personnelId || null,
+      p_account_name: operationData.accountName || 'Unknown Account',
+      p_ad_account_id: operationData.adAccountId || 'N/A',
+      p_balance: operationData.balance,
+      p_screenshot_url: operationData.screenshotUrl,
+      p_operator_name: operationData.operatorName
+    });
+    
+    if (error) {
+      // 如果RPC函数不存在，回退到原有逻辑
+      console.warn('RPC函数不可用，使用原有逻辑:', error);
+      
+      // 先创建清零记录
+      const { data: resetData, error: resetError } = await supabase
+        .from(ACCOUNT_MANAGEMENT_TABLES.RESET_OPERATIONS)
+        .insert({
+          account_id: operationData.accountId,
+          personnel_id: operationData.personnelId || null,
+          account_name: operationData.accountName || 'Unknown Account',
+          ad_account_id: operationData.adAccountId || 'N/A',
+          balance: operationData.balance,
+          screenshot_url: operationData.screenshotUrl,
+          operator_name: operationData.operatorName
+        })
+        .select();
+      
+      if (resetError) throw resetError;
+      
+      // 然后更新账户状态
+      try {
+        await accountService.updateStatusToReset(operationData.accountId);
+      } catch (statusError) {
+        console.warn('更新账户状态失败:', statusError);
+        // 不抛出错误，因为清零记录已经创建
+      }
+      
+      return resetData[0];
+    }
+    
+    return data;
+  },
+
+  // Get today's reset operations
+  async getTodayOperations() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RESET_OPERATIONS)
+      .select('*')
+      .gte('created_at', today)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete reset operation
+  async delete(operationId) {
+    const { data, error } = await supabase
+      .from(ACCOUNT_MANAGEMENT_TABLES.RESET_OPERATIONS)
+      .delete()
+      .eq('id', operationId)
+      .select();
+    
+    if (error) throw error;
+    return data[0];
+  }
+};
+
+// File upload service
+export const fileUploadService = {
+  // Upload screenshot
+  async uploadScreenshot(file, fileName) {
+    const { data, error } = await supabase.storage
+      .from('account-screenshots')
+      .upload(`screenshots/${Date.now()}_${fileName}`, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+    
+    if (error) throw error;
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('account-screenshots')
+      .getPublicUrl(data.path);
+    
+    return urlData.publicUrl;
+  }
+};
+
+// Real-time subscriptions
+export const subscriptions = {
+  // Subscribe to recharge operations
+  subscribeToRechargeOperations(callback) {
+    return supabase
+      .channel('recharge_operations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: ACCOUNT_MANAGEMENT_TABLES.RECHARGE_OPERATIONS
+        },
+        callback
+      )
+      .subscribe();
+  },
+
+  // Subscribe to reset operations
+  subscribeToResetOperations(callback) {
+    return supabase
+      .channel('reset_operations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: ACCOUNT_MANAGEMENT_TABLES.RESET_OPERATIONS
+        },
+        callback
+      )
+      .subscribe();
+  }
+};
